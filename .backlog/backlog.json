@@ -1,0 +1,39 @@
+{
+  "items": [
+    {
+      "description": "make a tui for backlog",
+      "created_at": "2025-12-17T21:05:27.703604Z",
+      "done": true
+    },
+    {
+      "description": "test backlog in other repos",
+      "created_at": "2025-12-17T21:06:27.516009Z",
+      "done": true
+    },
+    {
+      "description": "add the ability to scroll in tui mode",
+      "created_at": "2025-12-18T01:11:26.643156Z",
+      "done": true
+    },
+    {
+      "description": "number reording when a todo is completed",
+      "created_at": "2025-12-18T01:11:39.014690Z",
+      "done": true
+    },
+    {
+      "description": "make sure the Cargo.lock file is staged as part of the release process",
+      "created_at": "2025-12-18T02:17:16.316949Z",
+      "done": true
+    },
+    {
+      "description": "add version like backlog --version and show which verison is running.",
+      "created_at": "2025-12-18T02:44:09.329170Z",
+      "done": true
+    },
+    {
+      "description": "toggle hide completed todos",
+      "created_at": "2025-12-18T02:44:38.737359Z",
+      "done": false
+    }
+  ]
+}
