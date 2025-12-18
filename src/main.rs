@@ -20,8 +20,13 @@ use std::path::PathBuf;
 
 #[derive(Parser)]
 #[command(name = "backlog")]
+#[command(version)]
 #[command(about = "A simple backlog manager for your repos", long_about = None)]
 struct Cli {
+    /// Print version
+    #[arg(short = 'v', long = "version", action = clap::ArgAction::Version)]
+    version: (),
+
     #[command(subcommand)]
     command: Option<Commands>,
 }
