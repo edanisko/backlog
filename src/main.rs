@@ -157,6 +157,7 @@ struct App {
     backlog: Backlog,
     backlog_path: PathBuf,
     selected: usize,
+    scroll_offset: usize,
     mode: Mode,
     edit_buffer: String,
     edit_cursor: usize,
@@ -170,6 +171,7 @@ impl App {
             backlog,
             backlog_path,
             selected: 0,
+            scroll_offset: 0,
             mode: Mode::Normal,
             edit_buffer: String::new(),
             edit_cursor: 0,
@@ -282,11 +284,16 @@ impl App {
 struct BacklogList<'a> {
     items: &'a [BacklogItem],
     selected: usize,
+    scroll_offset: usize,
 }
 
 impl<'a> BacklogList<'a> {
-    fn new(items: &'a [BacklogItem], selected: usize) -> Self {
-        Self { items, selected }
+    fn new(items: &'a [BacklogItem], selected: usize, scroll_offset: usize) -> Self {
+        Self {
+            items,
+            selected,
+            scroll_offset,
+        }
     }
 }
 
@@ -304,7 +311,7 @@ impl Widget for BacklogList<'_> {
         let text_width = inner.width.saturating_sub(prefix_width) as usize;
 
         let mut y = 0u16;
-        for (i, item) in self.items.iter().enumerate() {
+        for (i, item) in self.items.iter().enumerate().skip(self.scroll_offset) {
             if y >= inner.height {
                 break;
             }
@@ -397,24 +404,43 @@ fn run_tui(backlog_path: PathBuf) -> io::Result<Option<String>> {
     let mut app = App::new(backlog, backlog_path);
 
     loop {
-        terminal.draw(|f| {
-            let has_input_box = app.mode == Mode::Edit || app.mode == Mode::Add;
-            let constraints = if has_input_box {
-                vec![
-                    Constraint::Min(3),
-                    Constraint::Length(5),
-                    Constraint::Length(3),
-                ]
-            } else {
-                vec![Constraint::Min(3), Constraint::Length(3)]
-            };
+        let has_input_box = app.mode == Mode::Edit || app.mode == Mode::Add;
 
+        // First pass: calculate layout to get actual list height
+        let size = terminal.size()?;
+        let area = Rect::new(0, 0, size.width, size.height);
+        let constraints = if has_input_box {
+            vec![
+                Constraint::Min(3),
+                Constraint::Length(5),
+                Constraint::Length(3),
+            ]
+        } else {
+            vec![Constraint::Min(3), Constraint::Length(3)]
+        };
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(constraints.clone())
+            .split(area);
+
+        // Inner height = chunk height - 2 for borders
+        // For now, use a conservative estimate: assume each item takes ~2 rows on average
+        let list_height = (chunks[0].height.saturating_sub(2) / 2) as usize;
+
+        // Adjust scroll to keep selection visible
+        if app.selected < app.scroll_offset {
+            app.scroll_offset = app.selected;
+        } else if list_height > 0 && app.selected >= app.scroll_offset + list_height {
+            app.scroll_offset = app.selected - list_height + 1;
+        }
+
+        terminal.draw(|f| {
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
-                .constraints(constraints)
+                .constraints(constraints.clone())
                 .split(f.area());
 
-            let list = BacklogList::new(&app.backlog.items, app.selected);
+            let list = BacklogList::new(&app.backlog.items, app.selected, app.scroll_offset);
             f.render_widget(list, chunks[0]);
 
             if has_input_box {
